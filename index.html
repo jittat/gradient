@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<svg width="600" height="600" stroke="#fff" stroke-width="0.5"></svg>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script src="https://d3js.org/d3-hsv.v0.1.min.js"></script>
+<script src="https://d3js.org/d3-contour.v1.min.js"></script>
+<script src="https://d3js.org/d3-selection-multi.v0.4.min.js"></script>
+<script>
+// took from https://bl.ocks.org/mbostock/4241134
+
+/*
+var minX = -0.7
+var maxX = 1.2;
+var minY = -0.1
+var maxY = 1.1;
+
+var f = function(x,y) {
+  return (1 - x)*(1 - x) + 100*(y - x*x)*(y - x*x);
+};
+*/
+
+var minX = -1.2
+var maxX = 1.2;
+var minY = -1.2
+var maxY = 1.2;
+
+var offset = 1;
+var scale = 100;
+var f = function(x,y) {
+  return offset + scale * Math.sin(Math.pow(x,2)/2.0 - Math.pow(y,2)/4.0 + 3)*Math.cos(2*x + 1 - Math.exp(y));
+};
+
+var arrayWidth = 100;
+var arrayHeight = 100;
+
+var xSize = maxX - minX;
+var ySize = maxY - minY;
+
+var maxVal = undefined;
+var minVal = undefined;
+var values = [];
+var computeArray = function(values) {
+  for(var ay = 0; ay < arrayHeight; ay++) {
+    for(var ax = 0; ax < arrayWidth; ax++) {
+      var x = minX + (parseFloat(ax) * xSize) / arrayWidth;
+      var y = maxY - (parseFloat(ay) * ySize) / arrayHeight;
+      var v = f(x,y);
+      values.push(v);
+
+      if((maxVal === undefined) || (v > maxVal)) {
+        maxVal = v;
+      }
+      if((minVal === undefined) || (v < minVal)) {
+        minVal = v;
+      }
+    }
+  }
+};
+
+computeArray(values);
+//console.log(maxVal);
+//console.log(minVal);
+maxVal = parseInt(maxVal + 1);
+minVal = parseInt(minVal - 1);
+
+var svg = d3.select("svg");
+var width = svg.attr("width");
+var height = svg.attr("height");
+
+var i0 = d3.interpolateHsvLong(d3.hsv(255, 1, 0.65), d3.hsv(0, 1, 0.90)),
+    color = d3.scaleSequential(i0).domain([minVal, maxVal]);
+
+svg.selectAll("path")
+  .data(d3.contours()
+        .size([arrayWidth, arrayHeight])
+        .thresholds(d3.range(minVal, maxVal, 2))
+        (values))
+  .enter().append("path")
+  .attr("d", d3.geoPath(d3.geoIdentity().scale(width / arrayWidth)))
+  .attr("fill", function(d) { return color(d.value); });
+
+var epsilon = 0.001;
+
+svg.on("click", function() {
+  var coords = d3.mouse(this);
+  var x = minX + (coords[0]/width)*xSize;
+  var y = maxY - (coords[1]/height)*ySize;
+
+  var dx = (f(x+epsilon,y) - f(x,y))/epsilon;
+  var dy = (f(x,y+epsilon) - f(x,y))/epsilon;
+  //console.log(dx);
+  //console.log(dy);
+
+  svg.selectAll("circle")
+    .remove();
+
+  var attrs = {"cx": coords[0], "cy": coords[1], "r": 5, "fill": 'black'};
+  svg.append("circle")
+    .attrs(attrs);
+
+  svg.append("line")
+    .attrs({x1: coords[0], y1: coords[1], x2: coords[0] + dx, y2: coords[1] - dy});
+});
+</script>
