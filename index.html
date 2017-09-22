@@ -102,4 +102,12 @@ svg.on("click", function() {
   svg.append("line")
     .attrs({x1: coords[0], y1: coords[1], x2: coords[0] + dx, y2: coords[1] - dy});
 });
+
+svg.on("contextmenu", function(data, index) {
+  svg.selectAll('circle')
+    .remove();
+  svg.selectAll('line')
+    .remove();
+  d3.event.preventDefault();
+});
 </script>
